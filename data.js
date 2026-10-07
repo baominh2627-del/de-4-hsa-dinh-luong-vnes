@@ -281,7 +281,7 @@ export const examData = [
   {
     id: "q32",
     type: "mcq",
-    question: "Cho hai số thực dương $a$, $b$ thỏa mãn \\frac{1}{2}\\log_2 a = \\log_2 \\frac{2}{b}$. Giá trị nhỏ nhất của biểu thức $P = 4a^3 + b^3 - 4\\log_2(4a^3 + b^3)$ được viết dưới dạng $x - y\\log_2 z$, với $x,y,z > 2$ là các số nguyên, $z$ là số lẻ. Tổng $x+y+z$ bằng",
+    question: "Cho hai số thực dương $a$, $b$ thỏa mãn $\\frac{1}{2}\\log_2 a = \\log_2 \\frac{2}{b}$. Giá trị nhỏ nhất của biểu thức $P = 4a^3 + b^3 - 4\\log_2(4a^3 + b^3)$ được viết dưới dạng $x - y\\log_2 z$, với $x,y,z > 2$ là các số nguyên, $z$ là số lẻ. Tổng $x+y+z$ bằng",
     options: ["11.", "2.", "1.", "4."],
     correctAnswer: 0,
     explanation: "Giải ra $x=8, y=4, z=-1$? Thực tế kết quả là 11.",
