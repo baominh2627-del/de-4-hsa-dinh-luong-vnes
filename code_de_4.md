@@ -98,6 +98,7 @@
   </body>
 </html>
 
+
 ```
 
 ## style.css
@@ -730,6 +731,7 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+
 ```
 
 ## firebase-config.js
@@ -753,6 +755,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 export { db, ref, push, set, update, serverTimestamp };
+
 
 
 ```
@@ -843,6 +846,7 @@ export function insertBackButton() {
 }
 
 
+
 ```
 
 ## script.js
@@ -859,10 +863,10 @@ const questionBoard = document.getElementById("question-board");
 const submitBtn = document.getElementById("submit-btn");
 
 // ===== CHá»ˆ THAY DÃ’NG NÃ€Y =====
-const MA_DE       = "HSA_DINHLUONG_DE4";                       // mÃ£ Ä‘á» Firebase (khÃ´ng dáº¥u, khÃ´ng cÃ¡ch)
-const DRAFT_KEY   = "examDraft_HSA_DINHLUONG_DE4";             // key localStorage
-const EXAM_MINUTES = 75;                             // thá»i gian lÃ m bÃ i (phÃºt)
-const RETURN_HASH = "#math";              // hash trang MTSedu
+const MA_DE       = "HSA_DINHLUONG_DE4";
+const DRAFT_KEY   = "examDraft_HSA_DINHLUONG_DE4";
+const EXAM_MINUTES = 75;
+const RETURN_HASH = "#math";
 // ================================
 
 let timeRemaining = EXAM_MINUTES * 60;
@@ -926,7 +930,7 @@ function loadDraftAndContinue(draft) {
 
 function renderExam() {
   questionsContainer.innerHTML = "";
-  
+
   const header = document.createElement("div");
   header.className = "section-header";
   header.innerHTML = `
@@ -1031,7 +1035,7 @@ function updateBoard() {
     let answered = false;
     if (q.type === "mcq" && userAnswers[q.id] !== undefined) answered = true;
     if (q.type === "fill" && userAnswers[q.id] && userAnswers[q.id].trim() !== "") answered = true;
-    
+
     if (answered) answeredCount++;
     if (questionBoard) {
       const box = document.getElementById(`box-${q.id}`);
@@ -1071,14 +1075,31 @@ function restoreDOMState() {
   });
 }
 
+let warned30 = false;
+
+function showToast(msg) {
+  let t = document.getElementById("toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 5000);
+}
+
 function startTimer() {
+  const endAt = Date.now() + timeRemaining * 1000;
   timerInterval = setInterval(() => {
-    timeRemaining--; saveDraft();
+    timeRemaining = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+    saveDraft();
     const m = Math.floor(timeRemaining / 60).toString().padStart(2, "0");
     const s = (timeRemaining % 60).toString().padStart(2, "0");
     document.getElementById("countdown").innerText = `${m}:${s}`;
-    if (timeRemaining === 30) {
-      alert("âš ï¸ Cáº£nh bÃ¡o: Chá»‰ cÃ²n 30 giÃ¢y!");
+    if (timeRemaining <= 30 && !warned30) {
+      warned30 = true;
+      showToast("âš ï¸ Cáº£nh bÃ¡o: Chá»‰ cÃ²n 30 giÃ¢y!");
       document.querySelector(".timer-pill").classList.add("timer-danger");
     }
     if (timeRemaining <= 0) { clearInterval(timerInterval); submitExam(); }
@@ -1099,6 +1120,23 @@ submitBtn.addEventListener("click", () => {
   if (confirm("Báº¡n cÃ³ cháº¯c muá»‘n ná»™p bÃ i?")) submitExam();
 });
 
+function parseNumber(str) {
+  const t = String(str ?? "").trim().replace(/\s+/g, "").replace(",", ".");
+  if (t === "") return NaN;
+  const frac = t.match(/^(-?\d+(?:\.\d+)?)\/(-?\d+(?:\.\d+)?)$/);
+  if (frac) return Number(frac[2]) === 0 ? NaN : Number(frac[1]) / Number(frac[2]);
+  return /^-?\d+(?:\.\d+)?$/.test(t) ? Number(t) : NaN;
+}
+
+function isFillCorrect(userInput, correct) {
+  const u = String(userInput ?? "").trim().toLowerCase().replace(/\s+/g, "");
+  const c = String(correct).trim().toLowerCase().replace(/\s+/g, "");
+  if (u === "") return false;
+  if (u === c) return true;
+  const un = parseNumber(u), cn = parseNumber(c);
+  return !isNaN(un) && !isNaN(cn) && Math.abs(un - cn) < 1e-9;
+}
+
 function submitExam() {
   isFinished = true; clearInterval(timerInterval);
   document.querySelectorAll("input, .btn-flag").forEach((el) => (el.disabled = true));
@@ -1110,39 +1148,37 @@ function submitExam() {
 
   examData.forEach((q) => {
     document.getElementById(`exp-${q.id}`).classList.remove("hidden");
-    
+
     if (q.type === "mcq") {
       const selected = userAnswers[q.id];
       document.getElementById(`lbl-${q.id}-${q.correctAnswer}`).classList.add("correct-ans");
-      if (selected === q.correctAnswer) { 
-        totalScore += 1; 
+      if (selected === q.correctAnswer) {
+        totalScore += 1;
       } else if (selected !== undefined) {
         document.getElementById(`lbl-${q.id}-${selected}`).classList.add("wrong-ans");
       }
     } else if (q.type === "fill") {
       const input = document.querySelector(`input[name="ans-${q.id}"]`);
-      const userVal = (userAnswers[q.id] || "").trim().toLowerCase();
-      const correct = q.correctAnswer.toLowerCase();
-      if (userVal === correct || userVal === correct.replace(".", ",")) {
-        totalScore += 1; 
+      if (isFillCorrect(userAnswers[q.id], q.correctAnswer)) {
+        totalScore += 1;
         input.classList.add("correct-ans");
-      } else { 
-        input.classList.add("wrong-ans"); 
+      } else {
+        input.classList.add("wrong-ans");
       }
     }
   });
 
   const scorePill = document.getElementById("score-pill");
   document.querySelector(".timer-pill")?.classList.add("hidden");
-  if (scorePill) { 
-    scorePill.classList.remove("hidden"); 
-    document.getElementById("review-score").innerText = totalScore.toFixed(0); 
+  if (scorePill) {
+    scorePill.classList.remove("hidden");
+    document.getElementById("review-score").innerText = totalScore.toFixed(0);
   }
 
   saveExamResultToFirebase(totalScore, cheatCount);
   document.getElementById("final-score").innerText = totalScore.toFixed(0);
   document.getElementById("cheat-display").innerText = cheatCount;
-  examScreen.classList.add("hidden"); 
+  examScreen.classList.add("hidden");
   resultScreen.classList.remove("hidden");
   localStorage.removeItem(DRAFT_KEY);
 }
@@ -1176,6 +1212,8 @@ document.getElementById("review-btn").addEventListener("click", () => {
   examScreen.classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
+
+
 
 ```
 
@@ -1464,7 +1502,7 @@ export const examData = [
   {
     id: "q32",
     type: "mcq",
-    question: "Cho hai sá»‘ thá»±c dÆ°Æ¡ng $a$, $b$ thá»a mÃ£n \\frac{1}{2}\\log_2 a = \\log_2 \\frac{2}{b}$. GiÃ¡ trá»‹ nhá» nháº¥t cá»§a biá»ƒu thá»©c $P = 4a^3 + b^3 - 4\\log_2(4a^3 + b^3)$ Ä‘Æ°á»£c viáº¿t dÆ°á»›i dáº¡ng $x - y\\log_2 z$, vá»›i $x,y,z > 2$ lÃ  cÃ¡c sá»‘ nguyÃªn, $z$ lÃ  sá»‘ láº». Tá»•ng $x+y+z$ báº±ng",
+    question: "Cho hai sá»‘ thá»±c dÆ°Æ¡ng $a$, $b$ thá»a mÃ£n $\\frac{1}{2}\\log_2 a = \\log_2 \\frac{2}{b}$. GiÃ¡ trá»‹ nhá» nháº¥t cá»§a biá»ƒu thá»©c $P = 4a^3 + b^3 - 4\\log_2(4a^3 + b^3)$ Ä‘Æ°á»£c viáº¿t dÆ°á»›i dáº¡ng $x - y\\log_2 z$, vá»›i $x,y,z > 2$ lÃ  cÃ¡c sá»‘ nguyÃªn, $z$ lÃ  sá»‘ láº». Tá»•ng $x+y+z$ báº±ng",
     options: ["11.", "2.", "1.", "4."],
     correctAnswer: 0,
     explanation: "Giáº£i ra $x=8, y=4, z=-1$? Thá»±c táº¿ káº¿t quáº£ lÃ  11.",
@@ -1618,6 +1656,7 @@ export const examData = [
     image: null
   }
 ];
+
 
 ```
 
