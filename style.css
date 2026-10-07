@@ -679,3 +679,25 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ===== NÚT "TRANG CHỦ": không đè lên thanh ghim ===== */
+body {
+  padding-top: 56px;
+}
+
+#mtsedu-back-btn a {
+  position: absolute !important;
+  top: 10px !important;
+  left: 14px !important;
+  padding: 6px 14px !important;
+  font-size: 13px !important;
+}
+
+#exam-screen.container,
+#login-screen.container,
+#result-screen.container {
+  margin-top: 8px;
+}
+
+.question-card {
+  scroll-margin-top: 150px;
+}
